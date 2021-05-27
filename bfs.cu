@@ -1,7 +1,9 @@
+#include <stdio.h>
+#include <iostream>
+
 #include "bfs.hpp"
 #include "bfs_kernels.cuh"
 #include "compaction.cuh"
-#include <stdio.h>
 
 extern __device__  unsigned terminate;
 extern __managed__ unsigned numActiveThreads;
@@ -21,10 +23,10 @@ void output(int N, unsigned *ptr) {
 }
 
 __host__
-void BFS(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances) {
+void bfsCUDA(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances) {
 
     assert(sizeof(unsigned) == 4);
-    
+
     distances.clear();
     distances.resize(graph.size());
 
@@ -54,7 +56,7 @@ void BFS(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances
     unsigned *activeMask, *prefixSums;
 
     size_t memSize = (graph.size() + 1) * sizeof(unsigned);
-    
+
     gpuErrchk(cudaMalloc(&d_F, memSize));
     gpuErrchk(cudaMemset(d_F, FALSE, memSize));
     setUInt(d_F + sourceVertex, TRUE); // add source to frontier
@@ -86,7 +88,7 @@ void BFS(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances
 
     // Main loop
 
-    const size_t prefixSumGridSize = 
+    const size_t prefixSumGridSize =
         (graph.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     while (true) {
@@ -96,7 +98,7 @@ void BFS(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances
         gpuErrchk(cudaMemcpyToSymbol(terminate, &terminateHost, sizeof(unsigned)));
 
         // Kernel 1: need to assign ACTIVE vertices to SIMD lanes (threads)
-        const size_t gridSizeK1 = 
+        const size_t gridSizeK1 =
             (numActiveThreads + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
         // launch kernel 1
@@ -121,7 +123,7 @@ void BFS(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances
             // Get prefix sums of F
             prescanArray(prefixSums, d_F, graph.size() + 1);
             cudaMemcpy(&numActiveThreads, prefixSums + graph.size(), sizeof(unsigned), cudaMemcpyDeviceToDevice);
-            
+
             const size_t gridSizeCompaction = (graph.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
             compactSIMD <<<gridSizeCompaction, BLOCK_SIZE>>> (graph.size(), prefixSums, activeMask, BLOCK_SIZE);
             gpuErrchk(cudaPeekAtLastError());

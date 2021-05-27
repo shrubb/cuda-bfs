@@ -1,5 +1,7 @@
 #include <vector>
 
-typedef std::vector<std::vector<unsigned> > Graph;
+typedef std::vector<std::vector<unsigned>> Graph;
 
-void BFS(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances);
+void bfsCUDA(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances);
+
+void bfsCPU(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & distances);
