@@ -103,8 +103,6 @@ void bfsCUDA(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & dista
 
         // launch kernel 1
         BFSKernel1 <<<gridSizeK1, BLOCK_SIZE>>> (graph.size(), activeMask, d_V, d_E, d_F, d_X, d_C, d_Fu);
-        gpuErrchk(cudaPeekAtLastError());
-        gpuErrchk(cudaDeviceSynchronize());
 
         // Kernel 2: need to assign ALL vertices to SIMD lanes
         const size_t gridSizeK2 =
@@ -112,8 +110,6 @@ void bfsCUDA(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & dista
 
         // launch kernel 2
         BFSKernel2 <<<gridSizeK2, BLOCK_SIZE>>> (graph.size(), d_F, d_X, d_Fu);
-        gpuErrchk(cudaPeekAtLastError());
-        gpuErrchk(cudaDeviceSynchronize());
 
         gpuErrchk(cudaMemcpyFromSymbol(&terminateHost, terminate, sizeof(unsigned)));
 
@@ -126,11 +122,6 @@ void bfsCUDA(Graph & graph, unsigned sourceVertex, std::vector<unsigned> & dista
 
             const size_t gridSizeCompaction = (graph.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
             compactSIMD <<<gridSizeCompaction, BLOCK_SIZE>>> (graph.size(), prefixSums, activeMask, BLOCK_SIZE);
-            gpuErrchk(cudaPeekAtLastError());
-            gpuErrchk(cudaDeviceSynchronize());
-
-            gpuErrchk(cudaPeekAtLastError());
-            gpuErrchk(cudaDeviceSynchronize());
         }
     }
 
