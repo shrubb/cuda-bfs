@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <stdio.h>
 #include "errchk.cuh"
 
 #define BLOCK_SIZE 256

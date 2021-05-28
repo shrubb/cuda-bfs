@@ -27,8 +27,8 @@ void preallocBlockSums(unsigned maxNumElements) {
 
     int level = 0;
 
-    do {       
-        unsigned numBlocks = 
+    do {
+        unsigned numBlocks =
             max(1, (int)ceil((float)numElts / (2.f * blockSize)));
         if (numBlocks > 1) {
             level++;
@@ -38,12 +38,12 @@ void preallocBlockSums(unsigned maxNumElements) {
 
     scanBlockSums = (unsigned**) malloc(level * sizeof(unsigned*));
     numLevelsAllocated = level;
-    
+
     numElts = maxNumElements;
     level = 0;
-    
-    do {       
-        unsigned numBlocks = 
+
+    do {
+        unsigned numBlocks =
             max(1, (int)ceil((float)numElts / (2.f * blockSize)));
         if (numBlocks > 1) {
             gpuErrchk(cudaMalloc(&scanBlockSums[level++], numBlocks * sizeof(unsigned)));
@@ -57,7 +57,7 @@ void deallocBlockSums() {
     for (unsigned i = 0; i < numLevelsAllocated; i++) {
         cudaFree(scanBlockSums[i]);
     }
-    
+
     free(scanBlockSums);
 
     scanBlockSums = 0;
@@ -66,13 +66,14 @@ void deallocBlockSums() {
 }
 
 __host__
-void prescanArrayRecursive(unsigned *outArray, 
-                           const unsigned *inArray, 
-                           int numElements, 
-                           int level) {
+void prescanArrayRecursive(
+        unsigned *outArray,
+        const unsigned *inArray,
+        int numElements,
+        int level) {
 
     unsigned blockSize = BLOCK_SIZE;
-    unsigned numBlocks = 
+    unsigned numBlocks =
         max(1, (int)ceil((float)numElements / (2.f * blockSize)));
     unsigned numThreads;
 
@@ -85,29 +86,29 @@ void prescanArrayRecursive(unsigned *outArray,
 
     unsigned numEltsPerBlock = numThreads * 2;
 
-    unsigned numEltsLastBlock = 
+    unsigned numEltsLastBlock =
         numElements - (numBlocks-1) * numEltsPerBlock;
     unsigned numThreadsLastBlock = max(1, numEltsLastBlock / 2);
     unsigned np2LastBlock = 0;
     unsigned sharedMemLastBlock = 0;
-    
+
     if (numEltsLastBlock != numEltsPerBlock) {
         np2LastBlock = 1;
 
         if(!isPowerOfTwo(numEltsLastBlock))
-            numThreadsLastBlock = floorPow2(numEltsLastBlock);    
-        
+            numThreadsLastBlock = floorPow2(numEltsLastBlock);
+
         unsigned extraSpace = (2 * numThreadsLastBlock) / NUM_BANKS;
-        sharedMemLastBlock = 
+        sharedMemLastBlock =
             sizeof(unsigned) * (2 * numThreadsLastBlock + extraSpace);
     }
 
     // Avoid shared memory bank conflicts
     unsigned extraSpace = numEltsPerBlock / NUM_BANKS;
-    unsigned sharedMemSize = 
+    unsigned sharedMemSize =
         sizeof(unsigned) * (numEltsPerBlock + extraSpace);
 
-    dim3 grid(max(1, numBlocks - np2LastBlock), 1, 1); 
+    dim3 grid(max(1, numBlocks - np2LastBlock), 1, 1);
     dim3 threads(numThreads, 1, 1);
 
     // Main action
@@ -115,10 +116,10 @@ void prescanArrayRecursive(unsigned *outArray,
     if (numBlocks > 1) {
         prescan<true, false> <<< grid, threads, sharedMemSize >>> (
             outArray, inArray, scanBlockSums[level], numThreads * 2, 0, 0);
-        
+
         if (np2LastBlock) {
             prescan<true, true> <<< 1, numThreadsLastBlock, sharedMemLastBlock >>> (
-                outArray, inArray, scanBlockSums[level], numEltsLastBlock, 
+                outArray, inArray, scanBlockSums[level], numEltsLastBlock,
                 numBlocks - 1, numElements - numEltsLastBlock);
         }
 
@@ -129,7 +130,7 @@ void prescanArrayRecursive(unsigned *outArray,
 
         if (np2LastBlock) {
             uniformAdd <<<1, numThreadsLastBlock>>> (
-                outArray, scanBlockSums[level], numEltsLastBlock, 
+                outArray, scanBlockSums[level], numEltsLastBlock,
                 numBlocks - 1, numElements - numEltsLastBlock);
         }
     } else if (isPowerOfTwo(numElements)) {

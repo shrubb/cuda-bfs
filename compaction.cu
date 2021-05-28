@@ -2,7 +2,6 @@
 
 __global__
 void compactSIMD(size_t N, unsigned *prefixSums, unsigned *activeMask, size_t blockSize) {
-
     size_t blockStart = blockIdx.x * blockSize;
     // Vertex assigned to current thread
     size_t v = blockStart + threadIdx.x;

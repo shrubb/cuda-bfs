@@ -60,4 +60,3 @@ void getActiveMaskTemp(size_t graphSize, unsigned *F, unsigned *activeMask) {
         }
     }
 }
-
