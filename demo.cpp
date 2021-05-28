@@ -4,8 +4,25 @@
 #include <iostream>
 #include <fstream>
 #include <assert.h>
+#include <chrono>
 
 #include "bfs.hpp"
+
+class ScopedTimer {
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+    std::string name;
+
+public:
+    ScopedTimer(const std::string & name = "time"):
+        start_time(std::chrono::high_resolution_clock::now()),
+        name(name) {}
+
+    ~ScopedTimer() {
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double, std::milli>(end_time - start_time).count();
+        std::cerr << name << ": " << duration << " ms" << std::endl;
+    }
+};
 
 Graph loadGraphFromFile(std::string filePath) {
     std::ifstream inputFile(filePath);
@@ -28,6 +45,9 @@ Graph loadGraphFromFile(std::string filePath) {
 }
 
 int main(int argc, char *argv[]) {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
     assert(argc == 4);
 
     Graph graph = loadGraphFromFile(argv[1]);
@@ -35,11 +55,18 @@ int main(int argc, char *argv[]) {
     std::string processor = argv[3];
     assert(processor == "cpu" or processor == "gpu");
 
+    std::cerr << "graph size: " << graph.size() << std::endl;
+
     std::vector<unsigned> distances;
-    if (processor == "cpu") {
-        bfsCPU(graph, sourceVertex, distances);
-    } else {
-        bfsCUDA(graph, sourceVertex, distances);
+
+    {
+        ScopedTimer _("BFS on " + processor + " took");
+
+        if (processor == "cpu") {
+            bfsCPU(graph, sourceVertex, distances);
+        } else {
+            bfsCUDA(graph, sourceVertex, distances);
+        }
     }
 
     for (int i = 0; i < distances.size(); ++i) {

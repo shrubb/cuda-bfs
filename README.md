@@ -5,13 +5,13 @@ This is a CUDA implementation of BFS from the "Large Graph Algorithms for Massiv
 
 ## How to Use
 
-Compile with `$ bash compile.sh` (*sorry, no makefile yet*). This will create an executable called `./demo`.
+Compile with `$ bash compile.sh` (*sorry, no makefile*). This will create an executable called `./demo`.
 
 Run it like so: `./demo /path/to/graph.txt <start-vertex-idx> (cpu | gpu)`.
 
-Example: `./demo ./test-data/simple.txt 0 gpu`.
+Example: `./demo ./test-data/small.txt 0 gpu`.
 
-On `i`-th line of stdout, it will write the distance between vertex `<start-vertex-idx` and vertex `i`, or a very large number (> 4e9) if `i` isn't reachable from `<start-vertex-idx>`.
+On `i`-th line of stdout, it will write the distance between vertex `<start-vertex-idx>` and vertex `i`, or a very large number (> 4e9) if `i` isn't reachable from `<start-vertex-idx>`.
 
 #### Graph Representation
 
@@ -23,7 +23,7 @@ On `i`-th line of stdout, it will write the distance between vertex `<start-vert
 <edge-start-vertex-index> <edge-end-vertex-index>
 ```
 
-There's an example at `./test-data/simple.txt`.
+There's an example at `./test-data/small.txt`.
 
 ## Code Structure
 
